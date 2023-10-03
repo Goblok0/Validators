@@ -1,0 +1,827 @@
+This code analyzes the preprocessed data.
+Specifically, it analyzes the Wordcount, informativeness, readability, valence, time, and AX measurements.
+The self-disclosure measure is performed in the "analyze_object_analysis.Rmd"
+
+```{r}
+library('tidyverse')
+library("readxl")
+
+```
+```{r}
+# Load the data
+# Traditional Survey
+data_A <- read_excel("D:\\VU\\Validators\\Data\\preproc_data_A.xlsx")
+# Chatbot-typed
+data_B <- read_excel("D:\\VU\\Validators\\Data\\preproc_data_B.xlsx")
+# Chatbot-spoken
+data_C <- read_excel("D:\\VU\\Validators\\Data\\preproc_data_C.xlsx")
+
+conditions = c('A','B','C')
+
+```
+Create dataframe for each variable, questions and condition
+```{r}
+
+# Return a dataframe for the requested variable
+make_df <- function(data, condition, cur_var){
+    # Check for which data needs to be extracted
+    # Wordcount
+    if(cur_var == 'wc'){
+      df = data.frame(wc1 = data$wc_inzet,
+                           wc2 = data$wc_org,
+                           wc3 = data$wc_pers,
+                           wc4 = data$wc_intent,
+                           wc5 = data$wc_disclosure)
+    # informativeness  
+    } else if (cur_var == 'inf'){
+      df = data.frame(inf1 = data$inf_inzet,
+                         inf2 = data$inf_org,
+                         inf3 = data$inf_pers,
+                         inf4 = data$inf_intent,
+                         inf5 = data$inf_disclosure)
+    # Readability  
+    } else if (cur_var == 'read'){
+      df = data.frame(read1 = data$read_inzet,
+                           read2 = data$read_org,
+                           read3 = data$read_pers,
+                           read4 = data$read_intent,
+                           read5 = data$read_disclosure)
+    # Binary emotional score
+    } else if (cur_var == 'emo'){
+      df = data.frame(e1 = data$e_inzet,
+                           e2 = data$e_org,
+                           e3 = data$e_pers,
+                           e4 = data$e_intent,
+                           e5 = data$e_disclosure)
+    # Percentual Valence Score
+    } else if (cur_var == 'val'){
+      df = data.frame(val1 = data$val_inzet,
+                           val2 = data$val_org,
+                           val3 = data$val_pers,
+                           val4 = data$val_intent,
+                           val5 = data$val_disclosure)
+    # Demographic
+    } else if (cur_var == 'demo'){
+      df = data.frame(dem_age = data$age,
+                          dem_gender = data$gender,
+                          dem_edu = data$edu)
+    # Time
+    } else if (cur_var == 'time'){
+      df = data.frame(t1 = data$time1, 
+                           t2 = data$time2,
+                           t3 = data$time3,
+                           ts = data$subj_time)
+    # User Experience
+    } else if (cur_var == 'ux'){
+      df = data.frame(telang = data$ux_telang,
+                         formulering = data$ux_formulering,
+                         saai = data$ux_saai,
+                         intuitief = data$ux_intuitief,
+                         verwarrend = data$ux_verwarrend,
+                         nadenken = data$ux_nadenken,
+                         verkies = data$ux_verkies,
+                         cb_ervaring = data$ux_chatbot_ervaring,
+                         cb_survey = data$ux_chatbot_survey)
+    }else{
+      warning('unknown cur var')
+    }
+
+    # Extra processing for condition C answers, remove empty cells
+    C_vars = c('wc','inf','read','val', 'emo')
+    if (condition == 'C' & (cur_var %in% C_vars)){
+        find_empty_cells <- function(x){
+          ex_index <- unique(-c(which(is.na(x)), 
+                                which(x == '0'), 
+                                which(x == 0)))
+          return (ex_index)
+        }
+      # go through the answer of each question
+      na_in_empty_cells <- function(df_x){
+        for (i in c(1:5)){
+          na_row = get(paste('ex_q',i,sep = ''))
+          df_x[-na_row,i] <- NaN
+        }
+        return (df_x)
+      }
+      
+      # Find all empty answers for the questions
+      ex_q1 <- find_empty_cells(data$Q_inzet)
+      ex_q2 <- find_empty_cells(data$Q_org)
+      ex_q3 <- find_empty_cells(data$Q_pers)
+      ex_q4 <- find_empty_cells(data$Q_intent)
+      ex_q5 <- find_empty_cells(data$Q_disclosure)
+      
+      # Create dataframe with NaN's instead of empty
+      df = na_in_empty_cells(df)
+    }
+    return (df)
+}
+
+# Make dataframes for each condition
+wcA <- make_df(data_A, 'A', 'wc')
+infA <- make_df(data_A, 'A', 'inf')
+readA <- make_df(data_A, 'A', 'read')
+valA <- make_df(data_A, 'A', 'val')
+emoA <- make_df(data_A, 'A', 'emo')
+demoA <- make_df(data_A, 'A', 'demo')
+timeA <- make_df(data_A, 'A', 'time')
+
+wcB <- make_df(data_B, 'B', 'wc')
+infB <- make_df(data_B, 'B', 'inf')
+readB <- make_df(data_B, 'B', 'read')
+valB <- make_df(data_B, 'B', 'val')
+emoB <- make_df(data_B, 'B', 'emo')
+demoB <- make_df(data_B, 'B', 'demo')
+timeB <- make_df(data_B, 'B', 'time')
+uxB <- make_df(data_B, 'B', 'ux')
+
+wcC <- make_df(data_C, 'C', 'wc')
+infC <- make_df(data_C, 'C', 'inf')
+readC <- make_df(data_C, 'C', 'read')
+valC <- make_df(data_C, 'C', 'val')
+emoC <- make_df(data_C, 'C', 'emo')
+demoC <- make_df(data_C, 'C', 'demo')
+timeC <- make_df(data_C, 'C', 'time')
+uxC <- make_df(data_C, 'C', 'ux')
+
+```
+
+Get the age mean and standard deviation per condition
+```{r}
+# Get the mean and sd per condition
+for (dataset in c('demoA','demoB', 'demoC')){
+    data = get(dataset)
+    print(dataset)
+    print(paste('mean: ', prettyNum(mean(data$dem_age), digits=4)))
+    print(paste('sd: ', prettyNum(sd(data$dem_age), digits=4)))
+    print('======================================================')
+
+}
+# Get the mean and sd for all conditions
+print('All')
+print(paste('mean: ', prettyNum(mean(c(demoA$dem_age,demoB$dem_age,demoC$dem_age)), digits=4)))
+print(paste('sd: ', prettyNum(sd(c(demoA$dem_age,demoB$dem_age,demoC$dem_age)), digits=4)))
+```
+
+Make piecharts of Demographic data
+```{r}
+par(mfrow=c(3,3))
+par(mar = c(1, 1, 1, 1))
+
+demo_labels = c('Gender', 'Age','Education')
+
+# Make piecharts for each condition
+for (dataset in c('demoA','demoB', 'demoC')){
+
+    # Extract data
+    data = get(dataset)
+    d_age = data[,1]
+    d_gender = data[,2]
+    d_edu = data[,3]
+    
+    # make gender piecharts
+    label_list = unique(d_gender)
+    count_list = c()
+    # transform data to piechart format
+    for (label in label_list){
+        count_label = length(d_gender[which(d_gender==label)])
+        count_list = c(count_list, count_label)
+    }
+    
+    ## Uncomment if you want to print the quantities
+    # print('gender counts')
+    # print(count_list)
+    # print(label_list)
+    
+    # Create gender piechart
+    pie(count_list, labels = label_list)
+    title(paste('Gender-', dataset))
+    
+    # make Age piecharts
+    label_list = c('18-34','35-54','55-75')
+    count_list = c()
+    # Transform data to piechart format
+    for (label in label_list){
+        low_bound = as.integer(str_sub(label,1,2))
+        up_bound = as.integer(str_sub(label,-2,-1))
+        count_label = length(d_age[which(d_age>low_bound & d_age<up_bound)])
+        count_list = c(count_list, count_label)
+      }
+    ## Uncomment if you want to print the quantities
+    # print('age counts')
+    # print(count_list)
+    # print(label_list)
+    
+    # Create age piechart
+    pie(count_list, labels = label_list)
+    title(paste('Age-', dataset))
+    
+    #education piecharts
+    label_list = c('1-low','2-mid','3-high')
+    count_list = c()
+    
+    # Transform data to piechart format
+    for (label in label_list){
+      label_i = str_sub(label,1,1)
+      count_label = length(grep(label_i, d_edu))
+      count_list = c(count_list, count_label)
+    }
+    ## Uncomment if you want to print the quantities
+    # print('education counts')
+    # print(count_list)
+    # print(label_list)
+    
+    # create eductation piechart
+    pie(count_list, labels = label_list)
+    title(paste('Education', dataset))
+    
+}
+```
+
+Visualize main variables in histogram and boxplot of conditions per question
+```{r}
+# figure parameters
+par(mfrow=c(3,5))
+par(mar = c(2, 1, 3, 1))
+
+var_names = c('wc', 'inf','read','val','emo')
+
+# Go through each answer measurement
+for (var_name in var_names){
+  datasets = c()
+  
+  # create a list of dataset names
+  for (i_L in c('A','B','C')){
+    data_L = paste(var_name,i_L,sep = '')
+    datasets = c(datasets,data_L)
+  }
+  # get the upperbound for the histograms
+  max_data = max(get(datasets[1]),get(datasets[2]), get(datasets[3]), na.rm=TRUE)
+  
+  # Create histograms of data
+  for (dataset in datasets){
+    data = get(dataset)
+    for (i in c(1:5)){
+      # get data
+      d_count = data[,i]
+      
+      # get histogram parameters
+      break_num = max(d_count,na.rm=TRUE)
+      if (var_name == 'val'){
+        break_num = length(unique(c(get(datasets[1]),get(datasets[2]), get(datasets[3]))))
+      }
+      
+      # Make Histogram
+      title_plot = paste(dataset,i)
+      hist(d_count, breaks = break_num,xlim=c(0, max_data), main = title_plot)
+      # place medianline in histogram plot
+      abline(v = median(d_count,na.rm=TRUE),col = "blue", lwd = 3)
+      # place p-value from Shapiro Wilkis test in plot
+      norm_p <- shapiro.test(d_count)
+      mtext(prettyNum(norm_p$p.value, digits = 2), side =3, cex = 0.8, line = -2)
+    }
+  }
+
+  # Make boxplots
+  for (dataset in datasets){
+    data = get(dataset)
+    # go through each question answer
+    for (i in c(1:5)){
+        # get answer data
+        d_count = data[,i]
+        title_plot = paste(dataset,i)
+        boxplot(d_count,horizontal=TRUE,ylim=c(0,max_data))
+        # Place Medianline in boxplot
+        abline(v = median(d_count,na.rm=TRUE),col = "blue", lwd = 1)
+        title(paste(dataset,i))
+    }
+}
+}
+
+```
+Visualize main variables in histogram and boxplot of condition
+```{r}
+# plots layout parameters
+par(mfrow=c(4,3))
+par(mar = c(2, 1, 3, 1))
+
+# Go through each variable
+var_names = c('wc', 'inf','read','val','emo')
+for (var_name in var_names){
+  datasets = c()
+  
+  # get datasets for plots
+  for (i_L in c('A','B','C')){
+    data_L = paste(var_name,i_L,sep = '')
+    datasets = c(datasets,data_L)
+  }
+  
+  # get upperbound for plot 
+  max_data = max(get(datasets[1]),get(datasets[2]), get(datasets[3]), na.rm=TRUE)
+  for (dataset in datasets){
+    data_all = unlist(get(dataset))
+    
+    # Set histogram breaks
+    break_num = max(data_all,na.rm=TRUE)
+    # Valence needs a separate break number
+    if (var_name == 'val'){
+      break_num = length(unique(c(get(datasets[1]),get(datasets[2]), get(datasets[3]))))
+    }
+
+    # Make histogram
+    title_plot = paste(dataset)
+    hist(data_all, breaks = break_num,xlim=c(0,max_data), main = title_plot)
+    # Place medianline
+    abline(v = median(data_all,na.rm=TRUE),col = "blue", lwd = 3)
+    # Place p-value of normality test
+    norm_p <- shapiro.test(data_all)
+    mtext(prettyNum(norm_p$p.value, digits = 2), side =3, cex = 0.8, line = -2)
+    
+  }
+
+
+}
+
+```
+
+Compare question measurements between conditions
+```{r}
+par(mfrow=c(3,5))
+
+# two-sided Wilcoxon test
+get_p <- function(a,b, var_name){
+
+    # Format datastructure
+    a = as.numeric(unlist(a))
+    b = as.numeric(unlist(b))
+
+    # chisq-test when comparing binary emotions
+    # two-sided wilcoxon test otherwise
+    if (var_name == 'emo'){
+      # format positive, neutral, and negative outcomes of condition a an b
+      ca_p1 = length(a[which(a==1)])
+      ca_0 = length(a[which(a==0)])
+      ca_n1 = length(a[which(a==-1)])
+      
+      cb_p1 = length(b[which(b==1)])
+      cb_0 = length(b[which(b==0)])
+      cb_n1 = length(b[which(b==-1)])
+      
+      matrix_ab <- matrix(c(ca_p1, ca_0, ca_n1,
+                            cb_p1, cb_0, cb_n1),
+                          nrow = 2, byrow = TRUE)
+      twc = chisq.test(matrix_ab)
+    }else{
+      twc = wilcox.test(a,b, paired = FALSE,na.rm=TRUE)
+    }
+
+    # format p-value
+    x = prettyNum(twc$p.value, digits = 3)
+    # add significance star if below sidak correction
+    sidak =  1-(1-0.05)^(1/(3*5))
+    if (twc$p.value <= sidak){
+      x = paste(toString(format(x, scientific = TRUE)), '*',sep="")
+    }
+    return (x)
+}
+
+# One-sided wilcoxon test
+get_p_one_sided <- function(a,b, var_name){
+
+    # Format datastructure
+    a = as.numeric(unlist(a))
+    b = as.numeric(unlist(b))
+
+    # chisquared test for binary emotional score
+    if (var_name == 'emo'){
+      # format positive, neutral, and negative outcomes of condition a an b
+      ca_p1 = length(a[which(a==1)])
+      ca_0 = length(a[which(a==0)])
+      ca_n1 = length(a[which(a==-1)])
+      
+      cb_p1 = length(b[which(b==1)])
+      cb_0 = length(b[which(b==0)])
+      cb_n1 = length(b[which(b==-1)])
+      
+      matrix_ab <- matrix(c(ca_p1, ca_0, ca_n1,
+                            cb_p1, cb_0, cb_n1),
+                          nrow = 2, byrow = TRUE)
+      twc = chisq.test(matrix_ab)
+    # less or greater wilcoxon test depending on measurement
+    }else if (var_name == 'val'){
+      twc = wilcox.test(a,b, paired = FALSE,na.rm=TRUE,alternative='less')
+    }else{
+      twc = wilcox.test(a,b, paired = FALSE,na.rm=TRUE,alternative='greater')
+    }
+    
+    # format p-value
+    x = prettyNum(twc$p.value, digits = 3)
+    # add star if significance level is below sidak treshold
+    sidak =  1-(1-0.1)^(1/(6*5*5))
+    if (twc$p.value <= sidak){
+      x = paste(toString(format(x, scientific = TRUE)), '*',sep="")
+    }
+    
+    return (x)
+}
+
+# Loop through each measurement(variable)
+for (var_name in var_names){
+
+    # get dataset for the current variable for each condition
+    data_varA = get(paste(var_name,'A',sep = ''))
+    data_varB = get(paste(var_name,'B',sep = ''))
+    data_varC = get(paste(var_name,'C',sep = ''))
+    
+    # Go through each question
+    for (i in c(1:5)){
+      x1 = data_varA[,i]
+      x2 = data_varB[,i]
+      x3 = data_varC[,i]
+      
+      # adjust length of dataset with empty  cells
+      max_length = max(length(data_varA[,i]),
+                       length(data_varB[,i]),
+                       length(data_varC[,i]))
+      length(x1) <- max_length
+      length(x2) <- max_length
+      length(x3) <- max_length
+      
+      # format data to one dataframe
+      data_test = data.frame(A = x1,
+                             B = x2,
+                             C = x3)
+      
+      # get p-value between each condition pair
+      p_list = c()
+      p_list_one = c()
+      for (c1 in conditions){
+        for (c2 in conditions){
+          d1 = data_test[c1]
+          d2 = data_test[c2]
+          
+          # two-sided test
+          data_p = get_p(d1,d2, var_name)
+          # one-sided test
+          data_p_one = get_p_one_sided(d1,d2, var_name)
+          p_list = c(p_list,data_p)
+          p_list_one = c(p_list_one, data_p_one)
+          
+            
+        }
+      }
+      
+      # Print the results into a table
+      tab <- matrix(p_list, ncol=3, byrow=TRUE)
+      colnames(tab) <- c('A','B','C')
+      rownames(tab) <- c('A','B','C')
+      tab <- as.table(tab)
+      
+      tab_one <- matrix(p_list_one, ncol=3, byrow=TRUE)
+      colnames(tab_one) <- c('A','B','C')
+      rownames(tab_one) <- c('A','B','C')
+      tab_one <- as.table(tab_one)
+      print(c(var_name, i, 'two-sided'))
+      print(tab)
+      print('--------\n')
+      print(c(var_name, i, 'one-sided'))
+      print(tab_one)
+      
+      print('==================================================\n')
+    }
+  # }
+}  
+```
+compare all questions combined
+```{r}
+# two-sided wilcoxon test
+get_p <- function(a,b, var_name){
+    
+    # format datastructure
+    a = as.numeric(unlist(a))
+    b = as.numeric(unlist(b))
+
+    # chi squared test for emotional score
+    # else wilcoxon test
+    if (var_name == 'emo'){
+      # format positive, neutral, and negative outcomes of condition a an b
+      ca_p1 = length(a[which(a==1)])
+      ca_0 = length(a[which(a==0)])
+      ca_n1 = length(a[which(a==-1)])
+      
+      cb_p1 = length(b[which(b==1)])
+      cb_0 = length(b[which(b==0)])
+      cb_n1 = length(b[which(b==-1)])
+      
+      matrix_ab <- matrix(c(ca_p1, ca_0, ca_n1,
+                            cb_p1, cb_0, cb_n1),
+                          nrow = 2, byrow = TRUE)
+      twc = chisq.test(matrix_ab)
+    }else{
+      twc = wilcox.test(a,b, paired = FALSE,na.rm=TRUE)
+    }
+    
+    # format p-value
+    x = prettyNum(twc$p.value, digits = 3)
+    # add * if the p-value is below the p-threshold
+    sidak =  1-(1-0.05)^(1/(5))
+    if (twc$p.value <= sidak){
+      x = paste(toString(format(x, scientific = TRUE)), '*',sep="")
+    }
+    return (x)
+}
+#one-sided wilcoxon test
+get_p_one_sided <- function(a,b, var_name){
+
+    # print(var_stats$p.value)
+    a = as.numeric(unlist(a))
+    b = as.numeric(unlist(b))
+
+    if (var_name == 'emo'){
+      # format positive, neutral, and negative outcomes of condition a an b
+      ca_p1 = length(a[which(a==1)])
+      ca_0 = length(a[which(a==0)])
+      ca_n1 = length(a[which(a==-1)])
+      
+      cb_p1 = length(b[which(b==1)])
+      cb_0 = length(b[which(b==0)])
+      cb_n1 = length(b[which(b==-1)])
+      
+      matrix_ab <- matrix(c(ca_p1, ca_0, ca_n1,
+                            cb_p1, cb_0, cb_n1),
+                          nrow = 2, byrow = TRUE)
+      twc = chisq.test(matrix_ab)
+    }else if (var_name == 'val'){
+      twc = wilcox.test(a,b, paired = FALSE,na.rm=TRUE,alternative='less')
+    }else{
+      twc = wilcox.test(a,b, paired = FALSE,na.rm=TRUE,alternative='greater')
+    }
+    
+    # Format p-value
+    x = prettyNum(twc$p.value, digits = 3)
+    # add * if p-value is below p-threshold
+    sidak =  1-(1-0.1)^(1/(5))
+    if (twc$p.value <= sidak){
+      x = paste(toString(format(x, scientific = TRUE)), '*',sep="")
+    }
+    
+    return (x)
+}
+
+# Go through each measurement/variable
+for (var_name in var_names){
+    
+    # get dataset for the current variable
+    data_varA = get(paste(var_name,'A',sep = ''))
+    data_varB = get(paste(var_name,'B',sep = ''))
+    data_varC = get(paste(var_name,'C',sep = ''))
+    
+    # format data into one dataframe
+    x1 = unlist(as.list(data_varA))
+    x2 = unlist(as.list(data_varB))
+    x3 = unlist(as.list(data_varC))
+    
+    max_length = max(length(x1),
+                     length(x2),
+                     length(x3))
+    
+    length(x1) <- max_length
+    length(x2) <- max_length
+    length(x3) <- max_length
+    
+    data_test = data.frame(A = x1,
+                           B = x2,
+                           C = x3)
+    
+    # compare data between each condition pair
+    p_list = c()
+    p_list_one = c()
+    for (c1 in conditions){
+      for (c2 in conditions){
+        d1 = data_test[c1]
+        d2 = data_test[c2]
+        
+        # two sided test
+        data_p = get_p(d1,d2, var_name)
+        # one-sided test
+        data_p_one = get_p_one_sided(d1,d2, var_name)
+        p_list = c(p_list,data_p)
+        p_list_one = c(p_list_one, data_p_one)
+        
+          
+      }
+    }
+    
+    # Print the results into a table
+    tab <- matrix(p_list, ncol=3, byrow=TRUE)
+    colnames(tab) <- c('A','B','C')
+    rownames(tab) <- c('A','B','C')
+    tab <- as.table(tab)
+    
+    tab_one <- matrix(p_list_one, ncol=3, byrow=TRUE)
+    colnames(tab_one) <- c('A','B','C')
+    rownames(tab_one) <- c('A','B','C')
+    tab_one <- as.table(tab_one)
+    print(c(var_name, 'two-sided'))
+    print(tab)
+    print('--------\n')
+    print(c(var_name, 'one-sided'))
+    print(tab_one)
+    
+    print('==================================================\n')
+}
+  # }
+ 
+```
+
+
+
+Make histograms of the UX and Chatbot experience results
+```{r}
+# define the UX questions
+ux_conds = c('telang', 'formulering', 'saai', 'intuitief','verwarrend', 'nadenkend', 'verkies', 'cb_ervaring', 'cb_survey')
+par(mfrow=c(2,2))
+par(mar = c(4, 3, 4, 1))
+
+# Go through each question
+for (i in c(1:9)){
+  # remove na's
+  dB <- na.omit(uxB[,i])
+  dC <- na.omit(uxC[,i])
+  
+  # Create histograms for both chatbot conditions
+  max_i = max(dB,dC, rm.na=TRUE)
+  hist(dB, main=paste(ux_conds[i],'B'), ylim = c(0,30),xlim = c(0,max_i))
+  mtext(prettyNum(mean(dB), digits = 2), side =3, cex = 0.8, line = -2)
+  hist(dC, main=paste(ux_conds[i],'C'), ylim = c(0,30),xlim = c(0,max_i))
+  mtext(prettyNum(mean(dC), digits = 2), side =3, cex = 0.8, line = -2)
+  
+  
+  }
+```
+ANOVA comparing chatbot vs non-chatboy and speaking vs non-speaking
+```{r}
+# Go through each variable
+for (var_name in var_names){
+    
+    # get datasets for the variable per condition
+    data_varA = get(paste(var_name,'A',sep = ''))
+    data_varB = get(paste(var_name,'B',sep = ''))
+    data_varC = get(paste(var_name,'C',sep = ''))
+    
+    # Go through each question
+    for (i in c(1:5)){
+      # remove any na's
+      x1 = log(na.omit(data_varA[,i]))
+      x2 = log(na.omit(data_varB[,i]))
+      x3 = log(na.omit(data_varC[,i]))
+      
+      # format data into one dataframe
+      max_length = max(length(data_varA[,i]),
+                       length(data_varB[,i]),
+                       length(data_varC[,i]))
+      
+      length(x1) <- max_length
+      length(x2) <- max_length
+      length(x3) <- max_length
+      
+      df_ABC = data.frame(A = x1,
+                          B = x2,
+                          C = x3)
+      # Compare traditional to chatbot
+      ktr_survey = kruskal.test(A ~ interaction(B + C), 
+                                data = df_ABC)
+      # Compare typing to speaking    
+      ktr_speaking = kruskal.test(C ~ interaction(A + B), 
+                                data = df_ABC)
+      # format p-value
+      p_survey = prettyNum(ktr_survey$p.value, digits = 3)
+      p_speaking = prettyNum(ktr_speaking$p.value, digits = 3)
+      # print results
+      print(c(var_name, i))
+      print(c('survey: ', p_survey))
+      print(c('speaking: ', p_speaking))
+      print('-----------------------------------------------')
+    }
+}
+
+```
+
+
+Comparing time values
+```{r}
+# get time data per condition
+# objective time condition A
+tA = timeA[,3]
+# subjective time condition A
+tAs = timeA[,4]
+tB = timeB[,3]
+tBs = timeB[,4]
+tC = timeC[,3]
+tCs = timeC[,4]
+
+# Remove outlyinng objective times
+tAq = quantile(tA, 0.95,na.rm = TRUE )
+tBq = quantile(tB, 0.95,na.rm = TRUE )
+tCq = quantile(tC, 0.95,na.rm = TRUE )
+
+ex_tA = which(tA>tAq)
+ex_tB = which(tB>tBq)
+ex_tC = which(tC>tCq)
+
+tA <- tA[-c(ex_tA)]
+tAs <- tAs[-c(ex_tA)]
+tB <- tB[-c(ex_tB)]
+tBs <- tBs[-c(ex_tB)]
+tC <- tC[-c(ex_tC)]
+tCs <- tCs[-c(ex_tC)]
+
+# print objective and subjective times next to eachother
+print('Actual time vs subjective times; Averages')             
+print(paste(prettyNum(mean(tA, na.rm= TRUE), digits = 3),'-',
+            prettyNum(mean(tAs, na.rm= TRUE), digits= 3)))
+print(paste(prettyNum(mean(tB, na.rm= TRUE), digits = 3),'-',
+            prettyNum(mean(tBs, na.rm= TRUE), digits= 3)))
+print(paste(prettyNum(mean(tC, na.rm= TRUE), digits = 3),'-',
+            prettyNum(mean(tCs, na.rm= TRUE), digits= 3)))
+
+# combine times
+real_times = c('tA','tB','tC')
+subj_times = c('tAs','tBs','tCs')
+
+# Check for normal distribution
+# With log most are still non-normally distributed
+for (t_var in c('tA','tAs','tB','tBs','tC','tCs')){
+  x = shapiro.test(get(t_var))
+  print(paste(t_var,': ',prettyNum(x$p.value, digits=3)))
+}
+
+# Two sided wilcoxon test
+tA_wt = wilcox.test(tA, tAs, paired=TRUE, na.rm=TRUE)
+tB_wt = wilcox.test(tB, tBs, paired=TRUE, na.rm=TRUE)
+tC_wt = wilcox.test(tC, tCs, paired=TRUE, na.rm=TRUE)
+# one-sided wilcoxon test
+# Typing condition, only check if objective time is lower
+tA_wto = wilcox.test(tA, tAs, paired=TRUE, na.rm=TRUE, alternative='less')
+# Chatbot conditions, only check if objective time is larger
+tB_wto = wilcox.test(tB, tBs, paired=TRUE, na.rm=TRUE, alternative='greater')
+tC_wto = wilcox.test(tC, tCs, paired=TRUE, na.rm=TRUE, alternative='greater')
+
+
+# Print two-sided test results
+print("two-sided")
+print(paste('tA-tAs: ',prettyNum(tA_wt$p.value, digits=3)))
+print(paste('tB-tBs: ',prettyNum(tB_wt$p.value, digits=3)))
+print(paste('tC-tCs: ',prettyNum(tC_wt$p.value, digits=3)))
+
+# print one-sided test results
+print("One-sided")
+print(paste('tA-tAs: ',prettyNum(tA_wto$p.value, digits=3)))
+print(paste('tB-tBs: ',prettyNum(tB_wto$p.value, digits=3)))
+print(paste('tC-tCs: ',prettyNum(tC_wto$p.value, digits=3)))
+
+
+
+```
+Compare objective time and subjective time with sidak correction
+```{r}
+
+get_p_time <- function(twc){
+    x = prettyNum(twc$p.value, digits = 3)
+    # add * if p-value is below p-threshold
+    sidak =  1-(1-0.1)^(1/(3))
+    if (twc$p.value <= sidak){
+      x = paste(toString(format(x, scientific = TRUE)), '*',sep="")
+    }
+    return (x)
+}
+
+print(paste('O:tA-tAs: ',get_p_time(tA_wto)))
+print(paste('O:tB-tBs: ',get_p_time(tB_wto)))
+print(paste('O:tC-tCs: ',get_p_time(tC_wto)))
+```
+Write timedata to a csv for easier overview
+```{r}
+# Format timedata to one dataframe
+max_length = max(length(tA), length(tAs),
+                 length(tB), length(tBs),
+                 length(tC), length(tCs))
+      
+length(tA) <- max_length
+length(tB) <- max_length
+length(tC) <- max_length
+
+length(tAs) <- max_length
+length(tBs) <- max_length
+length(tCs) <- max_length
+
+
+time_data_df <- data.frame(tA, tB, tC, tAs, tBs, tCs)
+
+# write time dataframe to csv
+write.csv(time_data_df, "D:\\VU\\Validators\\Data\\time_data.csv", row.names=FALSE)
+
+
+
+```
+
