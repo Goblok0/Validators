@@ -356,21 +356,26 @@ if __name__ == "__main__":
             continue
 
         # Extract and process data into analyzable measures
+        # Calculate wordcount
         print('get mean wordcount')
         df_meanwords = get_wordmeans(df_answers)
         df_meanwords = df_meanwords.set_axis(['wc_inzet', 'wc_org', 'wc_pers', 'wc_intent', 'wc_disclosure'], axis=1)
 
+        # Calculate informativeness
         print('get informativeness')
         df_inform = get_informativeness(df_answers, TFX_df)
         df_inform = df_inform.set_axis(['inf_inzet', 'inf_org', 'inf_pers', 'inf_intent', 'inf_disclosure'], axis=1)
 
+        # calculate readability
         print('get flesh score')
         df_flesh = get_fleshscore(df_answers)
         df_flesh = df_flesh.set_axis(['read_inzet', 'read_org', 'read_pers', 'read_intent', 'read_disclosure'], axis=1)
 
+        # Extract valence score
         print('encode valence')
         df_emo = df_emo.applymap(encode_valence)
-        
+
+        # Calculate subjective time
         print('process time')
         df_time = df_time.applymap(preproc_time)
         
