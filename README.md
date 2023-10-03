@@ -20,4 +20,4 @@ Measurements:
 - prior experience with chatbot
 
 
-![alt text](https://github.com/Goblok0/Validators/blob/main/Code%Flowcharts.drawio.png)
+![alt text](https://github.com/Goblok0/Validators/Code_Flowcharts.drawio.png)
