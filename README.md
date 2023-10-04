@@ -20,7 +20,10 @@ Measurements:
 - prior experience with chatbot
 
 Preprocessing files
-- 
+- process_sonar.ipynb: Process the SoNAR corpus frequency file to use for informativeness scoring
+- preprocess_conditions: Extract, calculate, and preprocess the relevant information from the survey outputs
+- process_data.Rmd: Visualize and perform statistical analysis on the preprocessed data (except self-disclosure)
+- analyze_object_analysis.Rmd: Visualize and perform statistical analysis on the object_analysis output file for the self-disclosure measurement
 
 
 ![alt text](https://github.com/Goblok0/Validators/blob/92b37fae2ae3cfc4b4d9a8c316cb7e40f96b4a68/Flowchart_Validators.png)
