@@ -22,6 +22,7 @@ Measurements:
 Preprocessing files
 - process_sonar.ipynb: Process the SoNAR corpus frequency file to use for informativeness scoring
 - preprocess_conditions: Extract, calculate, and preprocess the relevant information from the survey outputs
+Statistical analysis files
 - process_data.Rmd: Visualize and perform statistical analysis on the preprocessed data (except self-disclosure)
 - analyze_object_analysis.Rmd: Visualize and perform statistical analysis on the object_analysis output file for the self-disclosure measurement
 
