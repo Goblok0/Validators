@@ -35,4 +35,4 @@ Statistical analysis files
 - analyze_object_analysis.Rmd: Visualize and perform statistical analysis on the object_analysis output file for the self-disclosure measurement
 
 
-![alt text](https://github.com/Goblok0/Validators/blob/92b37fae2ae3cfc4b4d9a8c316cb7e40f96b4a68/Flowchart_Validators.png)
+![alt text](https://github.com/Goblok0/Validators/blob/501aa5eba41fd412cbae675234b33f660e2e0808/Flowchart_Validators.png)
