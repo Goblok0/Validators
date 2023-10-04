@@ -5,19 +5,27 @@ Description Internship:
 Creating an online survey with a conversational interface and comparing its answers to that of traditional online survey. Additionally, comparing the influence of verbal answering instead of typing.
 
 There are three conditions: 
-- Tradition Survey(A),
+- Traditional Survey(A),
 - Chatbot survey typed(B),
 - Chatbot survey spoken(C).
 
 Measurements:
 - Informativeness
+  - Information Theory 
 - Readability
+  - Flesch Reading Ease 
 - Valence
-- wordcount
-- self-disclosure
-- time
-- user experience
-- prior experience with chatbot
+  - Sentimental Analysis 
+- Wordcount
+  - Quantity words
+- Self-Disclosure
+  - Object analysis, and manual topic selection
+- Time
+  - Objective time and Subjective time 
+- User Experience
+  - Closed questions with Likert Scale
+- Prior Experience with Chatbot
+  - Closed questions with Likert Scale
 
 Preprocessing files
 - process_sonar.ipynb: Process the SoNAR corpus frequency file to use for informativeness scoring
